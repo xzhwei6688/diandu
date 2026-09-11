@@ -31,6 +31,11 @@ jobs:
       with:
         gradle-version: 8.2
 
+    - name: Download Tesseract English Data
+      run: |
+        mkdir -p app/src/main/assets/tessdata
+        curl -L -o app/src/main/assets/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata
+
     - name: Generate Gradle Wrapper
       run: gradle wrapper --gradle-version 8.2
 
