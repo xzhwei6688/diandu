@@ -10,6 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }  // 新增这一行，让它去 JitPack 找
     }
 }
 rootProject.name = "Diandu"
