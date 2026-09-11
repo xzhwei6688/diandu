@@ -24,7 +24,7 @@
         android:id="@+id/btnTakePhoto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. 拍照" />
+        android:text="1. 从相册选照片" />
 
     <Button
         android:id="@+id/btnRecognize"
