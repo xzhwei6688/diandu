@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     tessApi.init(dataDir.absolutePath, "eng")
                     tessApi.setImage(bitmap)
                     val text = tessApi.utF8Text ?: ""
-                    tessApi.end()
+                    tessApi.recycle()
                     text
                 }
 
