@@ -21,6 +21,8 @@ jobs:
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      with:
+        gradle-version: 8.2
 
     - name: Install SDK components
       run: |
