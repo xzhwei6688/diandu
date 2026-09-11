@@ -1,8 +1,7 @@
 package com.example.diandu
 
-import android.Manifest
+import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -15,9 +14,6 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.googlecode.tesseract.android.TessBaseAPI
 import kotlinx.coroutines.Dispatchers
@@ -29,9 +25,7 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
-    private val REQUEST_CAMERA = 100
-    private val REQUEST_PERMISSION = 101
-    private var photoFile: File? = null
+    private val REQUEST_PICK_IMAGE = 200
 
     private lateinit var ivPreview: ImageView
     private lateinit var progressBar: ProgressBar
@@ -52,57 +46,37 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         tts = TextToSpeech(this, this)
 
-        btnTakePhoto.setOnClickListener { checkPermissionAndTakePhoto() }
+        btnTakePhoto.setOnClickListener { pickImage() }
 
         btnRecognize.setOnClickListener {
             val bmp = currentBitmap
             if (bmp == null) {
-                Toast.makeText(this, "请先拍照", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "请先选照片", Toast.LENGTH_SHORT).show()
             } else {
                 recognizeText(bmp)
             }
         }
     }
 
-    private fun checkPermissionAndTakePhoto() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.CAMERA),
-                REQUEST_PERMISSION
-            )
-        } else {
-            takePhoto()
-        }
-    }
-
-    private fun takePhoto() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (intent.resolveActivity(packageManager) != null) {
-            val dir = File(filesDir, "images")
-            if (!dir.exists()) dir.mkdirs()
-            photoFile = File(dir, "book_${System.currentTimeMillis()}.jpg")
-            val uri: Uri = FileProvider.getUriForFile(
-                this,
-                "$packageName.fileprovider",
-                photoFile!!
-            )
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-            startActivityForResult(intent, REQUEST_CAMERA)
-        } else {
-            Toast.makeText(this, "没有找到相机应用", Toast.LENGTH_SHORT).show()
-        }
+    private fun pickImage() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        startActivityForResult(intent, REQUEST_PICK_IMAGE)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CAMERA && resultCode == RESULT_OK) {
-            photoFile?.let {
-                val bmp = BitmapFactory.decodeFile(it.absolutePath)
-                currentBitmap = bmp
-                ivPreview.setImageBitmap(bmp)
-                Toast.makeText(this, "拍照成功，点\"识别文字\"", Toast.LENGTH_SHORT).show()
+        if (requestCode == REQUEST_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
+            val imageUri: Uri? = data?.data
+            if (imageUri != null) {
+                try {
+                    val inputStream = contentResolver.openInputStream(imageUri)
+                    val bmp = BitmapFactory.decodeStream(inputStream)
+                    currentBitmap = bmp
+                    ivPreview.setImageBitmap(bmp)
+                    Toast.makeText(this, "照片已选择，点\"识别文字\"", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "读取图片失败", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -132,7 +106,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     tessApi.init(dataDir.absolutePath, "eng")
                     tessApi.setImage(bitmap)
                     val text = tessApi.utF8Text ?: ""
-                    tessApi.recycle()
+                    tessApi.recycle() // 之前就是这里报的错，现在已经改对了
                     text
                 }
 
@@ -141,7 +115,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 btnTakePhoto.isEnabled = true
 
                 if (result.isBlank()) {
-                    Toast.makeText(this@MainActivity, "没识别到文字，试试重拍", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "没识别到文字，换一张试试", Toast.LENGTH_LONG).show()
                 } else {
                     speak(result)
                     Toast.makeText(this@MainActivity, "识别成功，正在朗读！", Toast.LENGTH_SHORT).show()
@@ -175,20 +149,5 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         tts?.stop()
         tts?.shutdown()
         super.onDestroy()
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                takePhoto()
-            } else {
-                Toast.makeText(this, "需要相机权限才能拍照", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 }
