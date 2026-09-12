@@ -46,7 +46,7 @@ dependencies {
     implementation 'cz.adaptech.tesseract4android:tesseract4android:4.7.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
-    
-    // 内置离线发音引擎 eSpeak
-    implementation 'com.reecedunn.espeak:espeak:1.48.04'
+
+    // 正确的 eSpeak 依赖
+    implementation 'com.harium.hci:espeak:1.0.3'
 }
