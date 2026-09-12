@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         btnTakePhoto = findViewById(R.id.btnTakePhoto)
         btnRecognize = findViewById(R.id.btnRecognize)
 
+        // 初始化 TTS
         tts = TextToSpeech(this, this)
 
         btnTakePhoto.setOnClickListener { pickImage() }
@@ -106,7 +108,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     tessApi.init(dataDir.absolutePath, "eng")
                     tessApi.setImage(bitmap)
                     val text = tessApi.utF8Text ?: ""
-                    tessApi.recycle() // 之前就是这里报的错，现在已经改对了
+                    tessApi.recycle()
                     text
                 }
 
@@ -131,17 +133,32 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun speak(text: String) {
         if (!ttsReady || tts == null) {
-            Toast.makeText(this, "语音引擎未就绪，请去系统设置下载英文语音包", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "语音引擎未就绪，请去系统设置安装TTS", Toast.LENGTH_LONG).show()
             return
         }
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "diandu")
+        // 关键修复：强制使用媒体音量，防止被静音
+        val params = Bundle()
+        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "diandu")
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale.US)
-            ttsReady = result != TextToSpeech.LANG_MISSING_DATA
-                    && result != TextToSpeech.LANG_NOT_SUPPORTED
+            // 关键修复：先试美式英语，不行就试通用英语
+            var result = tts?.setLanguage(Locale.US)
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                result = tts?.setLanguage(Locale.ENGLISH)
+            }
+            
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                ttsReady = false
+                Toast.makeText(this, "系统缺少英语语音包，请安装 TTS 引擎", Toast.LENGTH_LONG).show()
+            } else {
+                ttsReady = true
+            }
+        } else {
+            ttsReady = false
+            Toast.makeText(this, "TTS 初始化失败，请安装语音引擎", Toast.LENGTH_LONG).show()
         }
     }
 
