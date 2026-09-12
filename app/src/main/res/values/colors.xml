@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#4CAF50</color> <!-- 清新绿 -->
+    <color name="primary_dark">#388E3C</color>
+    <color name="background">#F5F7FA</color> <!-- 浅灰背景 -->
+    <color name="white">#FFFFFF</color>
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#888888</color>
+</resources>
