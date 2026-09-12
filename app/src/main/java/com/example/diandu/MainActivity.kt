@@ -4,11 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -22,9 +20,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Locale
 
-class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+class MainActivity : AppCompatActivity() {
 
     private val REQUEST_PICK_IMAGE = 200
 
@@ -33,8 +30,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var btnTakePhoto: Button
     private lateinit var btnRecognize: Button
     private var currentBitmap: Bitmap? = null
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,9 +39,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         progressBar = findViewById(R.id.progressBar)
         btnTakePhoto = findViewById(R.id.btnTakePhoto)
         btnRecognize = findViewById(R.id.btnRecognize)
-
-        // 初始化 TTS
-        tts = TextToSpeech(this, this)
 
         btnTakePhoto.setOnClickListener { pickImage() }
 
@@ -119,7 +111,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (result.isBlank()) {
                     Toast.makeText(this@MainActivity, "没识别到文字，换一张试试", Toast.LENGTH_LONG).show()
                 } else {
-                    // 识别成功后，不再直接朗读，而是跳转到点读页面
                     val intent = Intent(this@MainActivity, ReadActivity::class.java)
                     intent.putExtra("text", result)
                     startActivity(intent)
@@ -131,21 +122,5 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Toast.makeText(this@MainActivity, "识别失败：${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            var result = tts?.setLanguage(Locale.US)
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                result = tts?.setLanguage(Locale.ENGLISH)
-            }
-            ttsReady = result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED
-        }
-    }
-
-    override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
-        super.onDestroy()
     }
 }
