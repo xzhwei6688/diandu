@@ -116,81 +116,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 btnRecognize.isEnabled = true
                 btnTakePhoto.isEnabled = true
 
-                package com.example.diandu
-
-import android.media.AudioManager
-import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.view.Gravity
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import java.util.Locale
-
-class ReadActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
-
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
-    private lateinit var container: LinearLayout
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_read)
-
-        container = findViewById(R.id.containerSentences)
-        tts = TextToSpeech(this, this)
-
-        // 接收上一页传过来的文字
-        val text = intent.getStringExtra("text") ?: ""
-
-        if (text.isNotBlank()) {
-            // 按照 . ! ? 切分成句子
-            val sentences = text.split(Regex("(?<=[.!?])\\s+"))
-            for (sentence in sentences) {
-                if (sentence.isBlank()) continue
-
-                // 动态生成一个个可点击的句子
-                val tv = TextView(this)
-                tv.text = sentence
-                tv.textSize = 20f
-                tv.setPadding(0, 16, 0, 16)
-                tv.gravity = Gravity.START
-                tv.setOnClickListener {
-                    speak(sentence)
-                    Toast.makeText(this, "正在朗读本句...", Toast.LENGTH_SHORT).show()
+                if (result.isBlank()) {
+                    Toast.makeText(this@MainActivity, "没识别到文字，换一张试试", Toast.LENGTH_LONG).show()
+                } else {
+                    // 识别成功后，不再直接朗读，而是跳转到点读页面
+                    val intent = Intent(this@MainActivity, ReadActivity::class.java)
+                    intent.putExtra("text", result)
+                    startActivity(intent)
                 }
-                container.addView(tv)
-            }
-        }
-    }
-
-    private fun speak(text: String) {
-        if (!ttsReady || tts == null) {
-            Toast.makeText(this, "语音引擎未就绪", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val params = Bundle()
-        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "read")
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            var result = tts?.setLanguage(Locale.US)
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                result = tts?.setLanguage(Locale.ENGLISH)
-            }
-            ttsReady = result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED
-        }
-    }
-
-    override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
-        super.onDestroy()
-    }
-}
             } catch (e: Exception) {
                 progressBar.visibility = View.GONE
                 btnRecognize.isEnabled = true
@@ -200,34 +133,13 @@ class ReadActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun speak(text: String) {
-        if (!ttsReady || tts == null) {
-            Toast.makeText(this, "语音引擎未就绪，请去系统设置安装TTS", Toast.LENGTH_LONG).show()
-            return
-        }
-        // 关键修复：强制使用媒体音量，防止被静音
-        val params = Bundle()
-        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "diandu")
-    }
-
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            // 关键修复：先试美式英语，不行就试通用英语
             var result = tts?.setLanguage(Locale.US)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 result = tts?.setLanguage(Locale.ENGLISH)
             }
-            
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                ttsReady = false
-                Toast.makeText(this, "系统缺少英语语音包，请安装 TTS 引擎", Toast.LENGTH_LONG).show()
-            } else {
-                ttsReady = true
-            }
-        } else {
-            ttsReady = false
-            Toast.makeText(this, "TTS 初始化失败，请安装语音引擎", Toast.LENGTH_LONG).show()
+            ttsReady = result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED
         }
     }
 
